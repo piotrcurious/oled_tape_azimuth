@@ -18,10 +18,13 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 #define PULSE_THRESHOLD 512
 
 // Define the maximum number of pulses to store
-#define MAX_PULSES 128
+#define MAX_PULSES 128 
 
 // Define the time interval for scrolling the display (in milliseconds)
 #define SCROLL_INTERVAL 100
+
+#define MIN_PULSE 100
+#dedine MAX_PULSE 900
 
 // Create an array to store the pulse lengths
 unsigned long pulses[MAX_PULSES];
@@ -91,11 +94,11 @@ void loop() {
     // Plot the pulse lengths on the bottom line of the display
     for (int i = 0; i < MAX_PULSES; i++) {
       // Map the pulse length to a pixel position on the x-axis
-      int x = map(i, 0, MAX_PULSES - 1, 0, SCREEN_WIDTH - 1);
+      int x = map(pulses[i], MIN_PULSE, MAX_PULSE, 0, SCREEN_WIDTH - 1);
 
       // Map the pulse length to a pixel position on the y-axis
-      int y = map(pulses[i], 0, SCROLL_INTERVAL * MAX_PULSES / 10, SCREEN_HEIGHT - 2, 0);
-
+  //    int y = map(pulses[i], 0, SCROLL_INTERVAL * MAX_PULSES / 10, SCREEN_HEIGHT - 2, 0);
+     int y = SCREEN_HEIGHT-1; // bottom of the screen 
       // Draw a pixel at the corresponding position
       display.drawPixel(x, y, SSD1306_WHITE);
     }
