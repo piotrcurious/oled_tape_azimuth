@@ -23,8 +23,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 // Define the time interval for scrolling the display (in milliseconds)
 #define SCROLL_INTERVAL 100
 
-#define MIN_PULSE 100
-#dedine MAX_PULSE 900
+#define MIN_PULSE 200
+#define MAX_PULSE 900
 
 // Create an array to store the pulse lengths
 unsigned long pulses[MAX_PULSES];
