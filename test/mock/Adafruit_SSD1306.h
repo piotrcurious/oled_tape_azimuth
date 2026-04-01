@@ -5,6 +5,8 @@
 #include "Wire.h"
 #include <vector>
 #include <string>
+#include <fstream>
+#include <iostream>
 
 #define SSD1306_WHITE 1
 #define SSD1306_BLACK 0
@@ -32,6 +34,7 @@ public:
         } else if (y0 == y1) {
             for (int x = std::min(x0, x1); x <= std::max(x0, x1); x++) drawPixel(x, y0, color);
         } else {
+            // Simple line algorithm for other cases (e.g. Bresenham if needed, but simple is okay for mock)
             drawPixel(x0, y0, color);
             drawPixel(x1, y1, color);
         }
@@ -46,7 +49,15 @@ public:
 
     void mock_print(const char* s) {
         for (int i = 0; s[i] != '\0'; i++) {
-            drawPixel(cursor_x + i*2, cursor_y, SSD1306_WHITE);
+            if (s[i] == '\n') {
+                cursor_y += 8;
+                cursor_x = 0;
+            } else {
+                // Mock text as simple pixel patterns
+                drawPixel(cursor_x, cursor_y, SSD1306_WHITE);
+                drawPixel(cursor_x + 1, cursor_y + 1, SSD1306_WHITE);
+                cursor_x += 6;
+            }
         }
     }
 
@@ -71,6 +82,25 @@ public:
         if (x >= 0 && x < _width && y >= 0 && y < _height) {
             buffer[y * _width + x] = color;
         }
+    }
+
+    void savePPM(const std::string& filename) {
+        std::ofstream ofs(filename, std::ios::binary);
+        if (!ofs) {
+            std::cerr << "Failed to open " << filename << " for writing\n";
+            return;
+        }
+        // P6: binary RGB, P3: ASCII RGB. P3 is easier to read/debug but P6 is more standard for tools.
+        // Let's use P3 (ASCII) for simplicity and visibility.
+        ofs << "P3\n" << _width << " " << _height << "\n255\n";
+        for (int y = 0; y < _height; ++y) {
+            for (int x = 0; x < _width; ++x) {
+                uint8_t val = buffer[y * _width + x] ? 255 : 0;
+                ofs << (int)val << " " << (int)val << " " << (int)val << " ";
+            }
+            ofs << "\n";
+        }
+        ofs.close();
     }
 
     std::vector<uint8_t> buffer;

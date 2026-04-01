@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <string>
 #include "mock/Arduino.h"
 #include "mock/Adafruit_SSD1306.h"
 
@@ -11,46 +12,70 @@ extern unsigned long virtual_millis;
 
 #include "../head_azimuth.ino"
 
-void print_buffer(Adafruit_SSD1306& display, const char* title) {
-    std::cout << "\n--- " << title << " ---\n";
-    for (int y = 0; y < 32; y++) {
-        for (int x = 0; x < 128; x++) {
-            std::cout << (display.buffer[y * 128 + x] ? '#' : '.');
-        }
-        std::cout << std::endl;
+void generate_signals(int base_pulse, int jitter, int count) {
+    for (int i = 0; i < count; i++) {
+        virtual_millis += 10;
+        // Jitter between -jitter and +jitter
+        int current_jitter = (jitter > 0) ? (rand() % (jitter * 2 + 1)) - jitter : 0;
+        simulated_pulse_length = base_pulse + current_jitter;
+        loop();
     }
 }
 
-void next_mode() {
+void press_button() {
     simulated_button_state = LOW;
     virtual_millis += 10;
     loop();
     simulated_button_state = HIGH;
-    virtual_millis += 600;
+    virtual_millis += 500;
     loop();
 }
 
+void take_screenshot(const std::string& name) {
+    std::string filename = "test/screenshots/" + name + ".ppm";
+    display.savePPM(filename);
+    std::cout << "Saved screenshot: " << filename << std::endl;
+}
+
 int main() {
+    srand(42); // Deterministic test
     setup();
 
-    // Simulate some realistic pulses around C64_MEDIUM (396 us) with some jitter
-    for(int i = 0; i < 200; i++) {
-        virtual_millis += 10;
-        // Jitter: +/- 10us
-        simulated_pulse_length = 396 + (i % 21) - 10;
-        loop();
-    }
+    // 1. Splash screen
+    take_screenshot("01_splash");
+    virtual_millis += 3000; // Skip splash and initial message
+    loop();
 
-    print_buffer(display, "HISTOGRAM MODE");
+    // --- GOOD AZIMUTH SCENARIOS ---
+    std::cout << "Testing Good Azimuth...\n";
+    generate_signals(396, 2, 100); // 396us (Medium) with low jitter
 
-    next_mode(); // to Head Fit
-    print_buffer(display, "HEAD FIT MODE");
+    take_screenshot("02_histogram_good");
 
-    next_mode(); // to Meter
-    print_buffer(display, "METER MODE");
+    press_button(); // to Head Fit
+    take_screenshot("03_headfit_good");
 
-    next_mode(); // to Stats
-    print_buffer(display, "STATS MODE");
+    press_button(); // to Meter
+    take_screenshot("04_meter_good");
+
+    press_button(); // to Stats
+    take_screenshot("05_stats_good");
+
+    // --- BAD AZIMUTH SCENARIOS ---
+    std::cout << "Testing Bad Azimuth...\n";
+    press_button(); // Back to Histogram
+    generate_signals(396, 40, 100); // 396us with high jitter
+
+    take_screenshot("06_histogram_bad");
+
+    press_button(); // to Head Fit
+    take_screenshot("07_headfit_bad");
+
+    press_button(); // to Meter
+    take_screenshot("08_meter_bad");
+
+    press_button(); // to Stats
+    take_screenshot("09_stats_bad");
 
     return 0;
 }
